@@ -78,6 +78,7 @@ func (hc *httpClient) request(ctx context.Context, method, path string, opts *re
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", "paylio-go/"+Version)
+	req.Header.Set("X-SDK-Source", "go")
 
 	resp, err := hc.client.Do(req)
 	if err != nil {
