@@ -34,6 +34,9 @@ func TestHTTPClientSendsCorrectHeaders(t *testing.T) {
 		if got := r.Header.Get("User-Agent"); got != "paylio-go/"+Version {
 			t.Errorf("User-Agent = %q", got)
 		}
+		if got := r.Header.Get("X-SDK-Source"); got != "go" {
+			t.Errorf("X-SDK-Source = %q, want %q", got, "go")
+		}
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"ok": true}`))
 	}))
