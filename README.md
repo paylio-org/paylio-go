@@ -1,11 +1,17 @@
-# paylio-go
+# Paylio Go SDK
 
-Go client library for the [Paylio](https://paylio.pro) subscription API.
+[![Go Reference](https://pkg.go.dev/badge/github.com/paylio-org/paylio-go.svg)](https://pkg.go.dev/github.com/paylio-org/paylio-go)
+[![CI](https://github.com/paylio-org/paylio-go/actions/workflows/ci.yml/badge.svg)](https://github.com/paylio-org/paylio-go/actions/workflows/ci.yml)
 
-- **Zero dependencies** — standard library only (`net/http`, `encoding/json`)
-- **Type-safe** — strongly typed structs with JSON tags
-- **Context-aware** — all methods accept `context.Context` for timeout/cancellation
-- **100% test coverage**
+The Paylio Go SDK provides convenient access to the Paylio API from applications written in Go.
+
+## Documentation
+
+See the [Paylio API docs](https://paylio.pro/docs).
+
+## Requirements
+
+- Go 1.22+
 
 ## Installation
 
@@ -13,9 +19,7 @@ Go client library for the [Paylio](https://paylio.pro) subscription API.
 go get github.com/paylio-org/paylio-go
 ```
 
-Requires **Go 1.22** or later.
-
-## Quick Start
+## Usage
 
 ```go
 package main
@@ -37,7 +41,7 @@ func main() {
 
 	ctx := context.Background()
 
-	// Retrieve a subscription
+	// Retrieve current subscription
 	sub, err := client.Subscription.Retrieve(ctx, "user_123")
 	if err != nil {
 		log.Fatal(err)
@@ -46,19 +50,7 @@ func main() {
 }
 ```
 
-## Usage
-
-### Retrieve a Subscription
-
-```go
-sub, err := client.Subscription.Retrieve(ctx, "user_123")
-if err != nil {
-    log.Fatal(err)
-}
-fmt.Println(sub.Status, sub.Plan.Slug, sub.Provider)
-```
-
-### List Subscription History
+### List subscription history
 
 ```go
 list, err := client.Subscription.List(ctx, "user_123", &paylio.ListOptions{
@@ -74,7 +66,7 @@ for _, item := range list.Items {
 fmt.Println("Has more:", list.HasMore())
 ```
 
-### Cancel a Subscription
+### Cancel a subscription
 
 ```go
 // Cancel at end of billing period (safe default)
@@ -86,34 +78,12 @@ result, err := client.Subscription.Cancel(ctx, "sub_uuid", &paylio.CancelOptions
 })
 ```
 
-## Error Handling
-
-```go
-sub, err := client.Subscription.Retrieve(ctx, "user_123")
-if err != nil {
-    var authErr *paylio.AuthenticationError
-    var notFoundErr *paylio.NotFoundError
-    var paylioErr *paylio.PaylioError
-
-    switch {
-    case errors.As(err, &authErr):
-        fmt.Println("Invalid API key:", authErr.Message)
-    case errors.As(err, &notFoundErr):
-        fmt.Println("Not found:", notFoundErr.Message)
-    case errors.As(err, &paylioErr):
-        fmt.Printf("API error %d: %s\n", paylioErr.HTTPStatus, paylioErr.Message)
-    default:
-        fmt.Println("Unexpected error:", err)
-    }
-}
-```
-
-## Configuration
+### Configuration
 
 ```go
 // Custom base URL and timeout
 client, err := paylio.NewClient("sk_live_xxx",
-    paylio.WithBaseURL("https://custom.api.com/v1"),
+    paylio.WithBaseURL("https://custom-api.example.com/v1"),
     paylio.WithTimeout(60 * time.Second),
 )
 
@@ -125,18 +95,50 @@ client, err := paylio.NewClient("sk_live_xxx",
 )
 ```
 
-## Error Types
+### Error handling
+
+```go
+sub, err := client.Subscription.Retrieve(ctx, "user_123")
+if err != nil {
+    var authErr *paylio.AuthenticationError
+    var notFoundErr *paylio.NotFoundError
+    var rateLimitErr *paylio.RateLimitError
+    var paylioErr *paylio.PaylioError
+
+    switch {
+    case errors.As(err, &authErr):
+        fmt.Println("Invalid API key:", authErr.Message)
+    case errors.As(err, &notFoundErr):
+        fmt.Println("Not found:", notFoundErr.Message)
+    case errors.As(err, &rateLimitErr):
+        fmt.Println("Rate limited, try again later")
+    case errors.As(err, &paylioErr):
+        fmt.Printf("API error %d: %s\n", paylioErr.HTTPStatus, paylioErr.Message)
+    default:
+        fmt.Println("Unexpected error:", err)
+    }
+}
+```
+
+## Error types
 
 | Error | HTTP Status | Description |
-|---|---|---|
+|-------|-------------|-------------|
 | `AuthenticationError` | 401 | Invalid or missing API key |
 | `InvalidRequestError` | 400 | Bad request parameters |
 | `NotFoundError` | 404 | Resource not found |
 | `RateLimitError` | 429 | Rate limit exceeded |
-| `APIError` | 5xx | Server error or unexpected status |
-| `APIConnectionError` | — | Network failure or timeout |
+| `APIError` | 5xx | Server error |
+| `APIConnectionError` | — | Network or connection failure |
 
 All error types embed `*PaylioError` and work with `errors.As`.
+
+## Development
+
+```bash
+go test ./...
+go vet ./...
+```
 
 ## License
 
